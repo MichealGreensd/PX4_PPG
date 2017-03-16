@@ -16,4 +16,13 @@ sh /etc/init.d/rc.mc_defaults
 set MIXER hexa_x
 
 # Need to set all 8 channels
-set PWM_OUT 12345678
+#set PWM_OUT 12345678
+
+# added for PPG(available!) -libn
+set PWM_OUT 345678
+set PWM_RATE 50
+set PWM_DISARMED 1000
+
+set PWM_OUT 12
+set PWM_RATE 400
+set PWM_DISARMED 1000
