@@ -117,6 +117,11 @@ set(config_module_list
 	modules/vtol_att_control
 
 	#
+	# uart serial communication -libn
+	#
+	modules/rotation_platform_uart
+	
+	#
 	# Logging
 	#
 	modules/logger
