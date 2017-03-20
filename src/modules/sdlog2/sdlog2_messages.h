@@ -641,6 +641,13 @@ struct log_STCK_s {
 	uint16_t stack_free;
 };
 
+/* --- ATSP - ATTITUDE SET POINT --- */
+#define LOG_PX4T_MSG 64
+struct log_PX4T_s {
+	uint8_t a;
+	uint8_t b;
+};
+
 /********** SYSTEM MESSAGES, ID > 0x80 **********/
 
 /* --- TIME - TIME STAMP --- */
@@ -732,6 +739,9 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(LOAD, "f", "CPU"),
 	LOG_FORMAT(DPRS, "Qffff", "errors,DPRESraw,DPRES,DPRESmax,Temp"),
 	LOG_FORMAT(STCK, "NH", "Task,Free"),
+	/* custom message */
+	LOG_FORMAT(PX4T, "BB", "a,b"),
+
 	/* system-level messages, ID >= 0x80 */
 	/* FMT: don't write format of format message, it's useless */
 	LOG_FORMAT(TIME, "Q", "StartTime"),

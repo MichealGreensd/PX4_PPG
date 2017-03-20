@@ -111,6 +111,8 @@
 #include <uORB/topics/commander_state.h>
 #include <uORB/topics/cpuload.h>
 #include <uORB/topics/task_stack_info.h>
+/* custom message */
+#include <uORB/topics/px4_test.h>
 
 #include <systemlib/systemlib.h>
 #include <systemlib/param/param.h>
@@ -1215,6 +1217,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		struct cpuload_s cpuload;
 		struct vehicle_gps_position_s dual_gps_pos;
 		struct task_stack_info_s task_stack_info;
+		struct px4_test_s px4_test;
 	} buf;
 
 	memset(&buf, 0, sizeof(buf));
@@ -1278,6 +1281,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 			struct log_LOAD_s log_LOAD;
 			struct log_DPRS_s log_DPRS;
 			struct log_STCK_s log_STCK;
+			struct log_PX4T_s log_PX4T;
 		} body;
 	} log_msg = {
 		LOG_PACKET_HEADER_INIT(0)
@@ -1330,6 +1334,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		int cpuload_sub;
 		int diff_pres_sub;
 		int task_stack_info_sub;
+		int px4_test_sub;
 	} subs;
 
 	subs.cmd_sub = -1;
@@ -1375,6 +1380,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 	subs.cpuload_sub = -1;
 	subs.diff_pres_sub = -1;
 	subs.task_stack_info_sub = -1;
+	subs.px4_test_sub = -1;
 
 	/* add new topics HERE */
 
@@ -1841,6 +1847,14 @@ int sdlog2_thread_main(int argc, char *argv[])
 				log_msg.body.log_ATSP.q_y = buf.att_sp.q_d[2];
 				log_msg.body.log_ATSP.q_z = buf.att_sp.q_d[3];
 				LOGBUFFER_WRITE_AND_COUNT(ATSP);
+			}
+
+			/* --- px4_test --- */
+			if (copy_if_updated(ORB_ID(px4_test), &subs.px4_test_sub, &buf.px4_test)) {
+				log_msg.msg_type = LOG_PX4T_MSG;
+				log_msg.body.log_PX4T.a = buf.px4_test.a;
+				log_msg.body.log_PX4T.b = buf.px4_test.b;
+				LOGBUFFER_WRITE_AND_COUNT(PX4T);
 			}
 
 			/* --- RATES SETPOINT --- */
