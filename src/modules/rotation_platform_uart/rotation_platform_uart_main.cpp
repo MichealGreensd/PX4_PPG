@@ -35,6 +35,9 @@
 //#include <uORB/topics/sensor_combined.h>
 #include <uORB/topics/vehicle_attitude.h>
 
+/* custom message */
+#include <uORB/topics/px4_test.h>
+
 static bool thread_should_exit = false; /*app exit flag */
 static bool thread_running = false;/*app status flag */
 static int rotation_platform_uart_task;/*Handle of rotation_platform_uart task/thread */
@@ -47,6 +50,7 @@ int rotation_platform_uart_thread_main(int argc, char *argv[]);
 
 int rotation_platform_uart_main(int argc, char *argv[])
 {
+	printf("argc(app_main) = %d\n",argc);
 	if (argc < 2) {
 		usage("missing command");
 		return 1;
@@ -95,6 +99,7 @@ int rotation_platform_uart_thread_main(int argc, char *argv[])
 {
 	thread_running = true;
 	PX4_INFO("Hello, running rotation_platform_uart_main");
+	printf("argc(app_main) = %d\n",argc);
 
 	/*subscribe the topic needed*/
 	int vehicle_attitude_sub = orb_subscribe(ORB_ID(vehicle_attitude));
@@ -103,23 +108,16 @@ int rotation_platform_uart_thread_main(int argc, char *argv[])
 	unsigned int out_buffer[50];
 	static int count_uart = 0;
 
+	/* subscribe custom message. -libn */
+    int px4_test_sub_fd = orb_subscribe(ORB_ID(px4_test));     // 订阅sensor_combined
+    orb_set_interval(px4_test_sub_fd, 1000);                          // 设置topic(bus)数据读取最小时间间隔.
 
-/*
-	 waiting for vehicle_attitude_sub
-	px4_pollfd_struct_t fds[1];
-	fds[0].fd = vehicle_attitude_sub;
-	fds[0].events = POLLIN;
-*/
+    /* one could wait for multiple topics with this technique, just using one here */
+    /* wakeup source */
+	px4_pollfd_struct_t poll_fds = {};
+	poll_fds.events = POLLIN;
+	poll_fds.fd = px4_test_sub_fd;
 
-
-/*该初始化方法适用于.c file ，.cpp will cause a error -bdai<2016-04-30> */
-//	/* one could wait for multiple topics with this technique, just using one here */
-//	px4_pollfd_struct_t fds[] = {
-//		{ .fd = sensor_sub_fd,   .events = POLLIN },
-//		/* there could be more file descriptors here, in the form like:
-//		 * { .fd = other_sub_fd,   .events = POLLIN },
-//		 */
-//	};
 
 
     /*
@@ -151,48 +149,47 @@ int rotation_platform_uart_thread_main(int argc, char *argv[])
 
 	while (!thread_should_exit) {
 
-/*		int ret = px4_poll(fds, 1, 500);
-		PX4_WARN("ret = %d", ret);
-		if (ret == 0){
-			PX4_ERR("[rotation_platform_uart] Got on data with in 0.5 senconds");
-			//continue;
+		/* wait for sensor update of 1 file descriptor for 1000 ms (1 second) */
+		int poll_ret = poll(&poll_fds, 1, 1000);                          // 线程等待数据更新, timeout为1s,
+																	// 如果数据没更新, 那么此时系统会进行任务切换.
+		/* handle the poll result */
+		if (poll_ret == 0) {
+			/* this means none of our providers is giving us data */
+			printf("[px4_simple_app] Got no data within a second\n");
+		} else if (poll_ret < 0) {
+			/* this is seriously bad - should be an emergency */
+
+		} else {
+			struct vehicle_attitude_s raw;
+			bool updated = false;
+			orb_check(vehicle_attitude_sub, &updated);
+			if(updated) {
+				orb_copy(ORB_ID(vehicle_attitude), vehicle_attitude_sub, &raw);
+				matrix::Eulerf euler = matrix::Quatf(raw.q);
+
+				out_buffer[0] = 0xAAFFFFFF;
+				memcpy(&out_buffer[1],&euler.phi(),sizeof(euler.phi()));
+				memcpy(&out_buffer[2],&euler.theta(),sizeof(euler.theta()));
+				memcpy(&out_buffer[3],&euler.psi(),sizeof(euler.psi()));
+				memcpy(&out_buffer[4],&raw.yawspeed,sizeof(raw.yawspeed));
+				memcpy(&out_buffer[5],&raw.rollspeed,sizeof(raw.rollspeed));
+				memcpy(&out_buffer[6],&raw.pitchspeed,sizeof(raw.pitchspeed));
+				out_buffer[7] = 0xBBFFFFFF;
+
+				int ret = write(uart_read,out_buffer,32);
+				usleep(50000);
+				pre_time = hrt_absolute_time();
+				PX4_INFO("time = %d, ret = %d, count = %d,", pre_time, ret,count_uart++);
+			}
+
+			/* subscribe to the custom message. -libn */
+			struct px4_test_s px4_test_data;
+			orb_check(px4_test_sub_fd, &updated);
+			if(updated) {
+				orb_copy(ORB_ID(px4_test), px4_test_sub_fd, &px4_test_data);
+				printf("px4_test_data.a = %d\tpx4_test_data.b = %d\n",px4_test_data.a,px4_test_data.b);
+			}
 		}
-		else if (ret < 0) {
-			PX4_WARN("Rotation_platform_uart POLL ERROR");
-			continue;
-		}*/
-
-
-		struct vehicle_attitude_s raw;
-		bool updated = false;
-
-		orb_check(vehicle_attitude_sub, &updated);
-
-//		if (hrt_absolute_time() - pre_time < 1000000)
-//			continue;
-
-		if(updated) {
-			orb_copy(ORB_ID(vehicle_attitude), vehicle_attitude_sub, &raw);
-			matrix::Eulerf euler = matrix::Quatf(raw.q);
-
-			out_buffer[0] = 0xAAFFFFFF;
-
-			memcpy(&out_buffer[1],&euler.phi(),sizeof(euler.phi()));
-			memcpy(&out_buffer[2],&euler.theta(),sizeof(euler.theta()));
-			memcpy(&out_buffer[3],&euler.psi(),sizeof(euler.psi()));
-			memcpy(&out_buffer[4],&raw.yawspeed,sizeof(raw.yawspeed));
-			memcpy(&out_buffer[5],&raw.rollspeed,sizeof(raw.rollspeed));
-			memcpy(&out_buffer[6],&raw.pitchspeed,sizeof(raw.pitchspeed));
-
-			out_buffer[7] = 0xBBFFFFFF;
-
-
-			int ret = write(uart_read,out_buffer,32);
-			usleep(50000);
-			pre_time = hrt_absolute_time();
-			PX4_INFO("time = %d, ret = %d, count = %d,", pre_time, ret,count_uart++);
-		}
-
 	}
 
 	thread_running = false;

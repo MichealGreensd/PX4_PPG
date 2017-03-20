@@ -18,7 +18,7 @@
 #include <systemlib/err.h>
 
 /* custom message */
-//#include <uORB/topics/px4_test.h>
+#include <uORB/topics/px4_test.h>
 
 static bool thread_should_exit = false;     /**< px4_simple_app exit flag */
 static bool thread_running = false;         /**< px4_simple_app status flag */
@@ -46,39 +46,40 @@ usage(const char *reason)
  */
 int px4_simple_app_main(int argc, char *argv[])
 {
-    if (argc < 1)
-            usage("missing command");
-        if (!strcmp(argv[1], "start")) {   //shell启动命令  //第一个字符串对应的指针为argv[1]!
-            if (thread_running) {          // 如果线程已经启动了
-                warnx("px_simple_app already running\n");
-                /* this is not an error */
-                exit(0);
-            }
-            thread_should_exit = false;     // 将线程状态位设置为false
-            // 创建线程, ucos非常相同.
-            /* start the task */
-            px4_simple_task = px4_task_spawn_cmd("px4_simple_app",
-                                   SCHED_DEFAULT,
-                                   SCHED_PRIORITY_MAX - 5,
-                                   1700,
-                                   px4_simple_thread_main,
-                                   (argv) ? (char * const *)&argv[2] : (char * const *)NULL);   //从第2个地址(agrv[2])开始，进行指针的传递!!!
-            exit(0);                        // 正常退出
-        }
-        if (!strcmp(argv[1], "stop")) {     // shell停止命令
-            thread_should_exit = true;
-            exit(0);
-        }
-        if (!strcmp(argv[1], "status")) {   // shell查询命令, 用于查询线程的状态.
-            if (thread_running) {
-                warnx("\trunning\n");
-            } else {
-                warnx("\tnot started\n");
-            }
-            exit(0);
-        }
-        usage("unrecognized command");
-        exit(1);
+    if(argc < 2)	{
+    	warnx("usage: px_simple_app {start|stop|status}");
+		return 1;
+    }
+    if(!strcmp(argv[1],"start"))	{
+    	if(thread_running){
+    		warnx("px_simple_app already running\n");
+    		return 1;
+    	}
+    	thread_should_exit = false;     // 将线程状态位设置为false
+    	// 创建线程, ucos非常相同.
+		/* start the task */
+		px4_simple_task = px4_task_spawn_cmd("px4_simple_app",
+							   SCHED_DEFAULT,
+							   SCHED_PRIORITY_MAX - 5,
+							   1700,
+							   px4_simple_thread_main,
+							   (argv) ? (char * const *)&argv[2] : (char * const *)NULL);   //从第2个地址(agrv[2])开始，进行指针的传递!!!argc也会对应发生变化
+		return 1;                      // 正常退出
+    }
+    if (!strcmp(argv[1], "stop")) {     // shell停止命令
+		thread_should_exit = true;
+		exit(0);
+	}
+	if (!strcmp(argv[1], "status")) {   // shell查询命令, 用于查询线程的状态.
+		if (thread_running) {
+			warnx("\trunning\n");
+		} else {
+			warnx("\tnot started\n");
+		}
+		exit(0);
+	}
+	usage("unrecognized command");
+	exit(1);
 }
 /**
  * px4_simple_app的后台线程, 用于执行用户任务
@@ -86,8 +87,10 @@ int px4_simple_app_main(int argc, char *argv[])
 int px4_simple_thread_main(int argc, char *argv[])
 {
     printf("Hello Sky!\n");
+
+    printf("argc(thread_main) = %d\n",argc);
     //第1个字符串对应的指针为argv[1]!
-    //px4_task_spawn_cmd命令中，从第2个地址(agrv[2])开始，进行指针的传递，所以进程中的程序，识别到的argv[1]即为原程序(px4_task_spawn_cmd)中的argv[2]
+    //px4_task_spawn_cmd命令中，从第2个地址(agrv[2])开始，进行指针的传递，所以进程中的程序，识别到的argv[1]即为原程序(px4_task_spawn_cmd)中的argv[2]!! argc也会对应发生变化！
     if(argc > 1)
     {
     	int num1 = atoi(argv[1]);
@@ -118,7 +121,7 @@ int px4_simple_thread_main(int argc, char *argv[])
     /* advertise attitude topic */
 	struct px4_test_s px4_test;
 	memset(&px4_test, 0, sizeof(px4_test));                                   // 初始化, 清零
-//	orb_advert_t px4_test_pub_fd = orb_advertise(ORB_ID(px4_test), &px4_test);
+	orb_advert_t px4_test_pub_fd = orb_advertise(ORB_ID(px4_test), &px4_test);
 
     /* one could wait for multiple topics with this technique, just using one here */
     struct pollfd fds[] = {
@@ -153,10 +156,10 @@ int px4_simple_thread_main(int argc, char *argv[])
                 /* copy sensors raw data into local buffer */
                 orb_copy(ORB_ID(sensor_combined), sensor_sub_fd, &raw);
                 // 将更新的数据输出到shell上
-                printf("[px4_simple_app] Accelerometer:\t%8.4f\t%8.4f\t%8.4f\n",
-                    (double)raw.accelerometer_m_s2[0],
-                    (double)raw.accelerometer_m_s2[1],
-                    (double)raw.accelerometer_m_s2[2]);
+//                printf("[px4_simple_app] Accelerometer:\t%8.4f\t%8.4f\t%8.4f\n",
+//                    (double)raw.accelerometer_m_s2[0],
+//                    (double)raw.accelerometer_m_s2[1],
+//                    (double)raw.accelerometer_m_s2[2]);
 
                 /* set att and publish this information for other apps */
                 att.rollspeed = raw.accelerometer_m_s2[0];
@@ -165,9 +168,9 @@ int px4_simple_thread_main(int argc, char *argv[])
                 orb_publish(ORB_ID(vehicle_attitude), att_pub_fd, &att);    // 发送vehicle_attitude数据
 
                 /* set att and publish this information for other apps */
-//				px4_test.a = 2;
-//				px4_test.b = 2;
-//				orb_publish(ORB_ID(px4_test), px4_test_pub_fd, &px4_test);    // 发送vehicle_attitude数据
+				px4_test.a = 2;
+				px4_test.b = 2;
+				orb_publish(ORB_ID(px4_test), px4_test_pub_fd, &px4_test);    // 发送vehicle_attitude数据
             }
             /* there could be more file descriptors here, in the form like:
              * if (fds[1..n].revents & POLLIN) {}

@@ -119,12 +119,12 @@ set(config_module_list
 	#
 	# uart serial communication -libn
 	#
-	# modules/rotation_platform_uart
+	modules/rotation_platform_uart
 	
 	# 
 	# px4_simple_app
 	#
-	# modules/px4_simple_app
+	modules/px4_simple_app
 
 	#
 	# Logging
