@@ -113,6 +113,8 @@
 #include <uORB/topics/task_stack_info.h>
 /* custom message */
 #include <uORB/topics/px4_test.h>
+/* parafoil attitude sensor. -libn Mar 21, 2017 */
+#include <uORB/topics/parafoil_attitude_sensor.h>
 
 #include <systemlib/systemlib.h>
 #include <systemlib/param/param.h>
@@ -1218,6 +1220,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		struct vehicle_gps_position_s dual_gps_pos;
 		struct task_stack_info_s task_stack_info;
 		struct px4_test_s px4_test;
+		struct parafoil_attitude_sensor_s parafoil_attitude;	/* parafoil attitude message. -libn Mar 21, 2017 */
 	} buf;
 
 	memset(&buf, 0, sizeof(buf));
@@ -1282,6 +1285,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 			struct log_DPRS_s log_DPRS;
 			struct log_STCK_s log_STCK;
 			struct log_PX4T_s log_PX4T;
+			struct log_PATT_s log_PATT;	/* parafoil attitude message. -libn Mar 21, 2017 */
 		} body;
 	} log_msg = {
 		LOG_PACKET_HEADER_INIT(0)
@@ -1335,6 +1339,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		int diff_pres_sub;
 		int task_stack_info_sub;
 		int px4_test_sub;
+		int parafoil_attitude_sensor_sub;	/* parafoil attitude message. -libn Mar 21, 2017 */
 	} subs;
 
 	subs.cmd_sub = -1;
@@ -1381,6 +1386,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 	subs.diff_pres_sub = -1;
 	subs.task_stack_info_sub = -1;
 	subs.px4_test_sub = -1;
+	subs.parafoil_attitude_sensor_sub = -1;		/* parafoil attitude message. -libn Mar 21, 2017 */
 
 	/* add new topics HERE */
 
@@ -1855,6 +1861,19 @@ int sdlog2_thread_main(int argc, char *argv[])
 				log_msg.body.log_PX4T.a = buf.px4_test.a;
 				log_msg.body.log_PX4T.b = buf.px4_test.b;
 				LOGBUFFER_WRITE_AND_COUNT(PX4T);
+			}
+
+			/* --- parafoil attitude sensor --- */
+			if (copy_if_updated(ORB_ID(parafoil_attitude_sensor), &subs.parafoil_attitude_sensor_sub, &buf.parafoil_attitude)) {
+				log_msg.msg_type = LOG_PATT_MSG;
+				log_msg.body.log_PATT.parafoil_roll_angle = buf.parafoil_attitude.parafoil_roll_angle;
+				log_msg.body.log_PATT.parafoil_pitch_angle = buf.parafoil_attitude.parafoil_pitch_angle;
+				log_msg.body.log_PATT.parafoil_yaw_angle = buf.parafoil_attitude.parafoil_yaw_angle;
+				log_msg.body.log_PATT.parafoil_roll_rate = buf.parafoil_attitude.parafoil_roll_rate;
+				log_msg.body.log_PATT.parafoil_pitch_rate = buf.parafoil_attitude.parafoil_pitch_rate;
+				log_msg.body.log_PATT.parafoil_yaw_rate = buf.parafoil_attitude.parafoil_yaw_rate;
+				log_msg.body.log_PATT.parafoil_temperature = buf.parafoil_attitude.parafoil_temperature;
+				LOGBUFFER_WRITE_AND_COUNT(PATT);
 			}
 
 			/* --- RATES SETPOINT --- */

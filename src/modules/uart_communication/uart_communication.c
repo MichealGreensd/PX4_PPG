@@ -56,8 +56,8 @@
 #include <uORB/topics/parafoil_attitude_sensor.h>
 #include <px4_tasks.h>
 
-#include <poll.h>	/* to add poll request -libn Mar 21, 2017 */
-#include <uORB/topics/sensor_combined.h>
+//#include <poll.h>	/* to add poll request -libn Mar 21, 2017 */
+//#include <uORB/topics/sensor_combined.h>
 
 static bool thread_should_exit = false;		/**< uart_communication exit flag */
 static bool thread_running = false;		/**< uart_communication status flag */
@@ -172,7 +172,7 @@ int uart_communication_main(int argc, char *argv[])
 		daemon_task = px4_task_spawn_cmd("uart_communication",
 							   SCHED_DEFAULT,
 							   SCHED_PRIORITY_MAX - 5,
-							   1700,
+							   2500,
 							   uart_communication_thread_main,
 							   (argv) ? (char * const *)&argv[2] : (char * const *)NULL);   //从第2个地址(agrv[2])开始，进行指针的传递!!!argc也会对应发生变化
 		return 1;
@@ -203,16 +203,16 @@ int uart_communication_thread_main(int argc, char *argv[])
 	thread_running = true;
     printf("Hello uart_communication!\n");
 
-    /* subscribe to sensor_combined topic */
-    int sensor_sub_fd = orb_subscribe(ORB_ID(sensor_combined));     // 订阅sensor_combined
-    orb_set_interval(sensor_sub_fd, 1000);
-    /* one could wait for multiple topics with this technique, just using one here */
-	struct pollfd fds[] = {
-		{ .fd = sensor_sub_fd,   .events = POLLIN },
-		/* there could be more file descriptors here, in the form like:
-		 * { .fd = other_sub_fd,   .events = POLLIN },
-		 */
-	};
+//    /* subscribe to sensor_combined topic */
+//    int sensor_sub_fd = orb_subscribe(ORB_ID(sensor_combined));     // 订阅sensor_combined
+//    orb_set_interval(sensor_sub_fd, 1000);
+//    /* one could wait for multiple topics with this technique, just using one here */
+//	struct pollfd fds[] = {
+//		{ .fd = sensor_sub_fd,   .events = POLLIN },
+//		/* there could be more file descriptors here, in the form like:
+//		 * { .fd = other_sub_fd,   .events = POLLIN },
+//		 */
+//	};
 
 //    char out_buffer[50];
     char byte_data = '0';
@@ -255,93 +255,95 @@ int uart_communication_thread_main(int argc, char *argv[])
 
     while(!thread_should_exit){
 
-        /* wait for sensor update of 1 file descriptor for 1000 ms (1 second) */
-        int poll_ret = poll(fds, 1, 1000);                          // 线程等待数据更新, timeout为1s,
-                                                                    // 如果数据没更新, 那么此时系统会进行任务切换.
-        /* handle the poll result */
-        if (poll_ret == 0) {
-            /* this means none of our providers is giving us data */
-            printf("[px4_simple_app] Got no data within a second\n");
-        } else if (poll_ret < 0) {
-            /* this is seriously bad - should be an emergency */
-        } else {
-            if (fds[0].revents & POLLIN) {
-
-            	/* commnet -libn Mar 21, 2017 */
-            	read(uart_read,&byte_data,1);
-				in_buffer[index] = byte_data;
-
-				/* buffer title: -libn Mar 21, 2017 */
-				/*
-				 * comment:				title:
-				 * acceleration			0x5551
-				 * angle acceleration	0x5552
-				 * angle(z-y-x rotation)	0x5553
-				 */
-
-				if ((index == 0)&&(in_buffer[index] == 0x55))
-						index =1;
-				else if ((index == 1)&&(in_buffer[index] == 0x53)){
-						index =2;
-						printf("Attitude message is coming!\n");
-				}
-				else if ((index >=2)&&(index <11))
-						index++;
-				else if (index ==11)
-				{
-					int title;
-					title = in_buffer[0]<<8|in_buffer[1];
-					printf("Title confirmed(att_message -> 0x5553): title_x = %x\n",title);
-
-					index = 0;
-					printf("I get the attitude message!\n");
-
-					char RL = in_buffer[2],RH = in_buffer[3];
-					printf("RL = %x\tRH = %x\n",RL,RH);
-					char PL = in_buffer[4],PH = in_buffer[5];
-					printf("PL = %x\tPH = %x\n",PL,PH);
-					char YL = in_buffer[6],YH = in_buffer[7];
-					printf("YL = %x\tYH = %x\n",YL,YH);
-					char TL = in_buffer[8],TH = in_buffer[9];
-					printf("TL = %x\tTH = %x\n",TL,TH);
-
-		//        	int temp = (RH<<8|RL);
-		//        	float roll_angle_2 = (float)temp/32768.0f*180.0f;
-		//        	printf("roll_angle_2 = %8.3f degree\n",(double)roll_angle_2);
-
-					float roll_angle = (float)(RH<<8|RL)/32768.0f*180.0f;
-					printf("roll angle = %8.3f degree\n",(double)roll_angle);
-					float pitch_angle = (float)(PH<<8|PL)/32768.0f*180.0f;
-					printf("pitch angle = %8.3f degree\n",(double)pitch_angle);
-					float yaw_angle = (float)(YH<<8|YL)/32768.0f*180.0f;
-					printf("yaw angle = %8.3f degree\n",(double)yaw_angle);
-					float T_sensor = (float)(TH<<8|TL)/340.0f+36.53f;
-					printf("Temperature = %8.3f degree\n",(double)T_sensor);
+//        /* wait for sensor update of 1 file descriptor for 1000 ms (1 second) */
+//        int poll_ret = poll(fds, 1, 1000);                          // 线程等待数据更新, timeout为1s,
+//                                                                    // 如果数据没更新, 那么此时系统会进行任务切换.
+//        /* handle the poll result */
+//        if (poll_ret == 0) {
+//            /* this means none of our providers is giving us data */
+//            printf("[px4_simple_app] Got no data within a second\n");
+//        } else if (poll_ret < 0) {
+//            /* this is seriously bad - should be an emergency */
+//        } else {
+//            if (fds[0].revents & POLLIN) {
+//
+//            }
+//            /* there could be more file descriptors here, in the form like:
+//             * if (fds[1..n].revents & POLLIN) {}
+//             */
+//        }
 
 
-					//force_sensor_data_decode(coupling_force_buff,in_buffer);
-					//usleep(1000);
-					//printf("%8.4f\n",(double)coupling_force_buff[2]);
+    	read(uart_read,&byte_data,1);
+		in_buffer[index] = byte_data;
 
-					parafoil_attitude_sensor.parafoil_roll_angle = roll_angle;
-					parafoil_attitude_sensor.parafoil_pitch_angle = pitch_angle;
-					parafoil_attitude_sensor.parafoil_yaw_angle = yaw_angle;
-		//        	parafoil_attitude_sensor.force_x = coupling_force_buff[0];
-		//        	parafoil_attitude_sensor.force_y = coupling_force_buff[1];
-		//        	parafoil_attitude_sensor.force_z = coupling_force_buff[2];
-		//        	parafoil_attitude_sensor.moment_x = coupling_force_buff[3];
-		//        	parafoil_attitude_sensor.moment_y = coupling_force_buff[4];
-		//        	parafoil_attitude_sensor.moment_z = coupling_force_buff[5];
-					orb_publish(ORB_ID(parafoil_attitude_sensor),parafoil_attitude_sensor_pub_fd, &parafoil_attitude_sensor);
-				}
-				else
-					index = 0;
+		/* buffer title: -libn Mar 21, 2017 */
+		/*
+		 * comment:				title:
+		 * acceleration			0x5551
+		 * angle acceleration	0x5552
+		 * angle(z-y-x rotation)	0x5553
+		 */
 
-            }
-            /* there could be more file descriptors here, in the form like:
-             * if (fds[1..n].revents & POLLIN) {}
-             */
-        }
+		if ((index == 0)&&(in_buffer[index] == 0x55))
+				index =1;
+		else if ((index == 1)&&(in_buffer[index] == 0x53)){
+				index =2;
+				printf("Attitude message is coming!\n");
+		}
+		else if ((index >= 2)&&(index < 11))
+				index++;
+		else if (index == 11)
+		{
+			int title;
+			title = in_buffer[0]<<8|in_buffer[1];
+			printf("Title confirmed(att_message -> 0x5553): title_x = %x\n",title);
+
+			index = 0;
+			printf("I get the attitude message!\n");
+
+			char RL = in_buffer[2],RH = in_buffer[3];
+			printf("RL = %x\tRH = %x\n",RL,RH);
+			char PL = in_buffer[4],PH = in_buffer[5];
+			printf("PL = %x\tPH = %x\n",PL,PH);
+			char YL = in_buffer[6],YH = in_buffer[7];
+			printf("YL = %x\tYH = %x\n",YL,YH);
+			char TL = in_buffer[8],TH = in_buffer[9];
+			printf("TL = %x\tTH = %x\n",TL,TH);
+
+//        	int temp = (RH<<8|RL);
+//        	float roll_angle_2 = (float)temp/32768.0f*180.0f;
+//        	printf("roll_angle_2 = %8.3f degree\n",(double)roll_angle_2);
+
+			float roll_angle = (float)(RH<<8|RL)/32768.0f*180.0f;
+			printf("roll angle = %8.3f degree\n",(double)roll_angle);
+			float pitch_angle = (float)(PH<<8|PL)/32768.0f*180.0f;
+			printf("pitch angle = %8.3f degree\n",(double)pitch_angle);
+			float yaw_angle = (float)(YH<<8|YL)/32768.0f*180.0f;
+			printf("yaw angle = %8.3f degree\n",(double)yaw_angle);
+			float T_sensor = (float)(TH<<8|TL)/340.0f+36.53f;
+			printf("Temperature = %8.3f degree\n",(double)T_sensor);
+
+
+			//force_sensor_data_decode(coupling_force_buff,in_buffer);
+			//usleep(1000);
+			//printf("%8.4f\n",(double)coupling_force_buff[2]);
+
+			parafoil_attitude_sensor.parafoil_roll_angle = roll_angle;
+			parafoil_attitude_sensor.parafoil_pitch_angle = pitch_angle;
+			parafoil_attitude_sensor.parafoil_yaw_angle = yaw_angle;
+//        	parafoil_attitude_sensor.force_x = coupling_force_buff[0];
+//        	parafoil_attitude_sensor.force_y = coupling_force_buff[1];
+//        	parafoil_attitude_sensor.force_z = coupling_force_buff[2];
+//        	parafoil_attitude_sensor.moment_x = coupling_force_buff[3];
+//        	parafoil_attitude_sensor.moment_y = coupling_force_buff[4];
+//        	parafoil_attitude_sensor.moment_z = coupling_force_buff[5];
+			orb_publish(ORB_ID(parafoil_attitude_sensor),parafoil_attitude_sensor_pub_fd, &parafoil_attitude_sensor);
+		}
+		else
+			index = 0;
+
+
 
     }
     thread_running = false;

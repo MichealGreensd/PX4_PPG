@@ -641,11 +641,23 @@ struct log_STCK_s {
 	uint16_t stack_free;
 };
 
-/* --- ATSP - ATTITUDE SET POINT --- */
+/* --- PX4T - PX4 TEST MESSAGE --- */
 #define LOG_PX4T_MSG 64
 struct log_PX4T_s {
 	uint8_t a;
 	uint8_t b;
+};
+
+/* --- PATT - PARAFOIL ATTITUDE --- */
+#define LOG_PATT_MSG 65
+struct log_PATT_s {
+	float parafoil_roll_angle;
+	float parafoil_pitch_angle;
+	float parafoil_yaw_angle;
+	float parafoil_roll_rate;
+	float parafoil_pitch_rate;
+	float parafoil_yaw_rate;
+	float parafoil_temperature;
 };
 
 /********** SYSTEM MESSAGES, ID > 0x80 **********/
@@ -741,6 +753,8 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(STCK, "NH", "Task,Free"),
 	/* custom message */
 	LOG_FORMAT(PX4T, "BB", "a,b"),
+	/* parafoil attitude message */
+	LOG_FORMAT(PATT, "fffffff", "proll,ppitch,pyaw,prollr,ppitchr,pyawr,ptemp"),
 
 	/* system-level messages, ID >= 0x80 */
 	/* FMT: don't write format of format message, it's useless */
