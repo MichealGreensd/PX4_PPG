@@ -121,6 +121,12 @@ set(config_module_list
 	#
 	modules/rotation_platform_uart
 	
+	#
+	# uart serial communication(attitude sensor) -libn
+	#
+	modules/uart_communication
+
+
 	# 
 	# px4_simple_app
 	#

@@ -1,0 +1,7 @@
+float32 parafoil_roll_angle
+float32 parafoil_pitch_angle
+float32 parafoil_yaw_angle
+float32 parafoil_roll_rate
+float32 parafoil_pitch_rate
+float32 parafoil_yaw_rate
+float32 parafoil_temperature

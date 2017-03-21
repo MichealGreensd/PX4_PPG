@@ -130,6 +130,7 @@ set(msg_file_names
 	wind_estimate.msg
 	# custom message
 	px4_test.msg
+	parafoil_attitude_sensor.msg
 	)
 
 # Get absolute paths
