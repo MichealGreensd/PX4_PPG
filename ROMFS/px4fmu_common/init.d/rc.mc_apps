@@ -46,6 +46,6 @@ mc_pos_control start
 land_detector start multicopter
 
 # custome app
-# rotation_platform_uart start	/* SERIAL4: /dev/ttyS6 */
-px4_simple_app start
-uart_communication start		/* SERIAL4: /dev/ttyS6 */
+# rotation_platform_uart start
+# px4_simple_app start
+uart_communication start

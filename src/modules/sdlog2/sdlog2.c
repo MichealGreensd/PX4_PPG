@@ -1220,7 +1220,7 @@ int sdlog2_thread_main(int argc, char *argv[])
 		struct vehicle_gps_position_s dual_gps_pos;
 		struct task_stack_info_s task_stack_info;
 		struct px4_test_s px4_test;
-		struct parafoil_attitude_sensor_s parafoil_attitude;	/* parafoil attitude message. -libn Mar 21, 2017 */
+		struct parafoil_attitude_sensor_s parafoil_attitude_sensor;	/* parafoil attitude message. -libn Mar 21, 2017 */
 	} buf;
 
 	memset(&buf, 0, sizeof(buf));
@@ -1864,15 +1864,15 @@ int sdlog2_thread_main(int argc, char *argv[])
 			}
 
 			/* --- parafoil attitude sensor --- */
-			if (copy_if_updated(ORB_ID(parafoil_attitude_sensor), &subs.parafoil_attitude_sensor_sub, &buf.parafoil_attitude)) {
+			if (copy_if_updated(ORB_ID(parafoil_attitude_sensor), &subs.parafoil_attitude_sensor_sub, &buf.parafoil_attitude_sensor)) {
 				log_msg.msg_type = LOG_PATT_MSG;
-				log_msg.body.log_PATT.parafoil_roll_angle = buf.parafoil_attitude.parafoil_roll_angle;
-				log_msg.body.log_PATT.parafoil_pitch_angle = buf.parafoil_attitude.parafoil_pitch_angle;
-				log_msg.body.log_PATT.parafoil_yaw_angle = buf.parafoil_attitude.parafoil_yaw_angle;
-				log_msg.body.log_PATT.parafoil_roll_rate = buf.parafoil_attitude.parafoil_roll_rate;
-				log_msg.body.log_PATT.parafoil_pitch_rate = buf.parafoil_attitude.parafoil_pitch_rate;
-				log_msg.body.log_PATT.parafoil_yaw_rate = buf.parafoil_attitude.parafoil_yaw_rate;
-				log_msg.body.log_PATT.parafoil_temperature = buf.parafoil_attitude.parafoil_temperature;
+				log_msg.body.log_PATT.parafoil_roll_angle = buf.parafoil_attitude_sensor.parafoil_roll_angle;
+				log_msg.body.log_PATT.parafoil_pitch_angle = buf.parafoil_attitude_sensor.parafoil_pitch_angle;
+				log_msg.body.log_PATT.parafoil_yaw_angle = buf.parafoil_attitude_sensor.parafoil_yaw_angle;
+				log_msg.body.log_PATT.parafoil_roll_rate = buf.parafoil_attitude_sensor.parafoil_roll_rate;
+				log_msg.body.log_PATT.parafoil_pitch_rate = buf.parafoil_attitude_sensor.parafoil_pitch_rate;
+				log_msg.body.log_PATT.parafoil_yaw_rate = buf.parafoil_attitude_sensor.parafoil_yaw_rate;
+				log_msg.body.log_PATT.parafoil_temperature = buf.parafoil_attitude_sensor.parafoil_temperature;
 				LOGBUFFER_WRITE_AND_COUNT(PATT);
 			}
 

@@ -158,6 +158,7 @@ int uart_communication_main(int argc, char *argv[])
 {
 	if (argc < 2) {
 		usage("missing command");
+		return 1;
 	}
 
 	if (!strcmp(argv[1], "start")) {
@@ -165,7 +166,7 @@ int uart_communication_main(int argc, char *argv[])
 		if (thread_running) {
 			warnx("uart_communication already running\n");
 			/* this is not an error */
-			exit(0);
+			return 1;
 		}
 
 		thread_should_exit = false;
@@ -231,7 +232,7 @@ int uart_communication_thread_main(int argc, char *argv[])
     int uart_read = uart_init("/dev/ttyS6");
 
     if(false == uart_read)return -1;
-    if(false == set_uart_baudrate(uart_read,115200))
+    if(false == set_uart_baudrate(uart_read,9600))
     {
         printf("[YCM]set_uart_baudrate is failed\n");
         return -1;
@@ -249,9 +250,9 @@ int uart_communication_thread_main(int argc, char *argv[])
 ////    usleep(100000);	/* one second. -libn */
 //    printf("usleep is over\n");
 
-    struct parafoil_attitude_sensor_s parafoil_attitude_sensor;
-    memset(&parafoil_attitude_sensor, 0, sizeof(parafoil_attitude_sensor));
-    orb_advert_t parafoil_attitude_sensor_pub_fd = orb_advertise(ORB_ID(parafoil_attitude_sensor), &parafoil_attitude_sensor);
+    struct parafoil_attitude_sensor_s parafoil_attitude_sensor_data;
+    memset(&parafoil_attitude_sensor_data, 0, sizeof(parafoil_attitude_sensor_data));
+    orb_advert_t parafoil_attitude_sensor_pub_fd = orb_advertise(ORB_ID(parafoil_attitude_sensor), &parafoil_attitude_sensor_data);
 
     while(!thread_should_exit){
 
@@ -329,16 +330,16 @@ int uart_communication_thread_main(int argc, char *argv[])
 			//usleep(1000);
 			//printf("%8.4f\n",(double)coupling_force_buff[2]);
 
-			parafoil_attitude_sensor.parafoil_roll_angle = roll_angle;
-			parafoil_attitude_sensor.parafoil_pitch_angle = pitch_angle;
-			parafoil_attitude_sensor.parafoil_yaw_angle = yaw_angle;
+			parafoil_attitude_sensor_data.parafoil_roll_angle = roll_angle;
+			parafoil_attitude_sensor_data.parafoil_pitch_angle = pitch_angle;
+			parafoil_attitude_sensor_data.parafoil_yaw_angle = yaw_angle;
 //        	parafoil_attitude_sensor.force_x = coupling_force_buff[0];
 //        	parafoil_attitude_sensor.force_y = coupling_force_buff[1];
 //        	parafoil_attitude_sensor.force_z = coupling_force_buff[2];
 //        	parafoil_attitude_sensor.moment_x = coupling_force_buff[3];
 //        	parafoil_attitude_sensor.moment_y = coupling_force_buff[4];
 //        	parafoil_attitude_sensor.moment_z = coupling_force_buff[5];
-			orb_publish(ORB_ID(parafoil_attitude_sensor),parafoil_attitude_sensor_pub_fd, &parafoil_attitude_sensor);
+			orb_publish(ORB_ID(parafoil_attitude_sensor),parafoil_attitude_sensor_pub_fd, &parafoil_attitude_sensor_data);
 		}
 		else
 			index = 0;

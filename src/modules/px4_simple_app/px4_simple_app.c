@@ -19,6 +19,7 @@
 
 /* custom message */
 #include <uORB/topics/px4_test.h>
+#include <uORB/topics/parafoil_attitude_sensor.h>
 
 static bool thread_should_exit = false;     /**< px4_simple_app exit flag */
 static bool thread_running = false;         /**< px4_simple_app status flag */
@@ -113,6 +114,10 @@ int px4_simple_thread_main(int argc, char *argv[])
     int sensor_sub_fd = orb_subscribe(ORB_ID(sensor_combined));     // 订阅sensor_combined
     orb_set_interval(sensor_sub_fd, 1000);                          // 设置topic(bus)数据读取最小时间间隔.
                                                                     // 即如果没有1s, 那么认为数据还是旧的.
+    /* subscribe to sensor_combined topic */
+	int parafoil_attitude_sensor_sub_fd = orb_subscribe(ORB_ID(parafoil_attitude_sensor));     // 订阅sensor_combined
+	orb_set_interval(parafoil_attitude_sensor_sub_fd, 1000);                          // 设置topic(bus)数据读取最小时间间隔.
+																	// 即如果没有1s, 那么认为数据还是旧的.
     /* advertise attitude topic */
     struct vehicle_attitude_s att;
     memset(&att, 0, sizeof(att));                                   // 初始化, 清零
@@ -160,6 +165,12 @@ int px4_simple_thread_main(int argc, char *argv[])
 //                    (double)raw.accelerometer_m_s2[0],
 //                    (double)raw.accelerometer_m_s2[1],
 //                    (double)raw.accelerometer_m_s2[2]);
+
+                struct parafoil_attitude_sensor_s parafoil_attitude_sensor_data;
+				/* copy sensors raw data into local buffer */
+				orb_copy(ORB_ID(parafoil_attitude_sensor), parafoil_attitude_sensor_sub_fd, &parafoil_attitude_sensor_data);
+				printf("parafoil_attitude_sensor_data.parafoil_roll_angle = %8.3f\n",(double)parafoil_attitude_sensor_data.parafoil_roll_angle);
+
 
                 /* set att and publish this information for other apps */
                 att.rollspeed = raw.accelerometer_m_s2[0];

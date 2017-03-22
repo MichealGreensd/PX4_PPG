@@ -38,7 +38,6 @@ px4_add_module(
 	COMPILE_FLAGS
 	SRCS
 		uart_communication.c
-		data_process.c
 	DEPENDS
 		platforms__common
 	)
