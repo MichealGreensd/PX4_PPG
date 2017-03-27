@@ -219,6 +219,7 @@ int uart_communication_thread_main(int argc, char *argv[])
     char byte_data = '0';
     char in_buffer[64] = "";
     int index=0;
+    int index2=0;
 
     /*
      * TELEM1 : /dev/ttyS1
@@ -232,7 +233,7 @@ int uart_communication_thread_main(int argc, char *argv[])
     int uart_read = uart_init("/dev/ttyS6");
 
     if(false == uart_read)return -1;
-    if(false == set_uart_baudrate(uart_read,9600))
+    if(false == set_uart_baudrate(uart_read,115200))
     {
         printf("[YCM]set_uart_baudrate is failed\n");
         return -1;
@@ -277,6 +278,7 @@ int uart_communication_thread_main(int argc, char *argv[])
 
     	read(uart_read,&byte_data,1);
 		in_buffer[index] = byte_data;
+		printf("message got: %x\n",byte_data);
 
 		/* buffer title: -libn Mar 21, 2017 */
 		/*
@@ -286,6 +288,7 @@ int uart_communication_thread_main(int argc, char *argv[])
 		 * angle(z-y-x rotation)	0x5553
 		 */
 
+		/* angles. -libn Mar 23, 2017 */
 		if ((index == 0)&&(in_buffer[index] == 0x55))
 				index =1;
 		else if ((index == 1)&&(in_buffer[index] == 0x53)){
@@ -344,7 +347,67 @@ int uart_communication_thread_main(int argc, char *argv[])
 		else
 			index = 0;
 
+		/* angle_rates -libn Mar 23, 2017 */
+		if ((index2 == 0)&&(in_buffer[index2] == 0x55))
+				index2 =1;
+		else if ((index2 == 1)&&(in_buffer[index2] == 0x52)){
+				index2 =2;
+				printf("Attitude_rate message is coming!\n");
+		}
+		else if ((index2 >= 2)&&(index2 < 11))
+				index2++;
+		else if (index2 == 11)
+		{
+			int title;
+			title = in_buffer[0]<<8|in_buffer[1];
+			printf("Title confirmed(att_rate_message -> 0x5552): title_x = %x\n",title);
 
+			index2 = 0;
+			printf("I get the attitude rate message!\n");
+
+			char RL = in_buffer[2],RH = in_buffer[3];
+			printf("RL = %x\tRH = %x\n",RL,RH);
+			char PL = in_buffer[4],PH = in_buffer[5];
+			printf("PL = %x\tPH = %x\n",PL,PH);
+			char YL = in_buffer[6],YH = in_buffer[7];
+			printf("YL = %x\tYH = %x\n",YL,YH);
+			char TL = in_buffer[8],TH = in_buffer[9];
+			printf("TL = %x\tTH = %x\n",TL,TH);
+
+//        	int temp = (RH<<8|RL);
+//        	float roll_angle_2 = (float)temp/32768.0f*180.0f;
+//        	printf("roll_angle_2 = %8.3f degree\n",(double)roll_angle_2);
+
+			float roll_angle_rate = (float)(RH<<8|RL)/32768.0f*2000.0f;
+			printf("roll angle rate = %8.3f degree/s\n",(double)roll_angle_rate);
+			float pitch_angle_rate = (float)(PH<<8|PL)/32768.0f*2000.0f;
+			printf("pitch angle rate = %8.3f degree/s\n",(double)pitch_angle_rate);
+			float yaw_angle_rate = (float)(YH<<8|YL)/32768.0f*2000.0f;
+			printf("yaw angle rate = %8.3f degree/s\n",(double)yaw_angle_rate);
+			float T_sensor = (float)(TH<<8|TL)/340.0f+36.53f;
+			printf("Temperature = %8.3f degree\n",(double)T_sensor);
+
+
+			//force_sensor_data_decode(coupling_force_buff,in_buffer);
+			//usleep(1000);
+			//printf("%8.4f\n",(double)coupling_force_buff[2]);
+
+			parafoil_attitude_sensor_data.parafoil_roll_rate = roll_angle_rate;
+			parafoil_attitude_sensor_data.parafoil_pitch_rate = pitch_angle_rate;
+			parafoil_attitude_sensor_data.parafoil_yaw_rate = yaw_angle_rate;
+//        	parafoil_attitude_sensor.force_x = coupling_force_buff[0];
+//        	parafoil_attitude_sensor.force_y = coupling_force_buff[1];
+//        	parafoil_attitude_sensor.force_z = coupling_force_buff[2];
+//        	parafoil_attitude_sensor.moment_x = coupling_force_buff[3];
+//        	parafoil_attitude_sensor.moment_y = coupling_force_buff[4];
+//        	parafoil_attitude_sensor.moment_z = coupling_force_buff[5];
+//					orb_publish(ORB_ID(parafoil_attitude_sensor),parafoil_attitude_sensor_pub_fd, &parafoil_attitude_sensor_data);
+		}
+		else
+			index2 = 0;
+		/**/
+
+//		orb_publish(ORB_ID(parafoil_attitude_sensor),parafoil_attitude_sensor_pub_fd, &parafoil_attitude_sensor_data);
 
     }
     thread_running = false;
