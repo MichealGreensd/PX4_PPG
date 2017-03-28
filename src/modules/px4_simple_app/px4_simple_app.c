@@ -3,7 +3,11 @@
  * examples for adding app to pxihawk -- huangling
  * 2016/3/12
  */
+
+#include <px4_config.h>
+#include <px4_defines.h>
 #include <px4_tasks.h>
+#include <px4_posix.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <poll.h>
@@ -129,64 +133,134 @@ int px4_simple_thread_main(int argc, char *argv[])
 	orb_advert_t px4_test_pub_fd = orb_advertise(ORB_ID(px4_test), &px4_test);
 
     /* one could wait for multiple topics with this technique, just using one here */
-    struct pollfd fds[] = {
-        { .fd = sensor_sub_fd,   .events = POLLIN },
-        /* there could be more file descriptors here, in the form like:
-         * { .fd = other_sub_fd,   .events = POLLIN },
-         */
-    };
-    int error_counter = 0;
+//    struct pollfd fds[] = {
+//        { .fd = parafoil_attitude_sensor_sub_fd,   .events = POLLIN },
+//        /* there could be more file descriptors here, in the form like:
+//         * { .fd = other_sub_fd,   .events = POLLIN },
+//         */
+//    };
+//    int error_counter = 0;
     thread_running = true;
+
+    /* check parafoil attitude message update. -libn Mar 28, 2017 */
+	bool updated = false;
+	int parafoil_att_count = 0;
+    struct parafoil_attitude_sensor_s parafoil_attitude_sensor_data;
+	/* obtained data for the first file descriptor */
+	struct sensor_combined_s raw;
+
+	/* poll request. -libn Mar 28, 2017 */
+	/* wakeup source */
+	px4_pollfd_struct_t fds[1];
+	fds[0].fd = parafoil_attitude_sensor_sub_fd;
+	fds[0].events = POLLIN;
+
     while(!thread_should_exit)              // 如果线程没有被停止
     {
         /* wait for sensor update of 1 file descriptor for 1000 ms (1 second) */
-        int poll_ret = poll(fds, 1, 1000);                          // 线程等待数据更新, timeout为1s,
+//        int poll_ret = poll(fds, 1, 100);                          // 线程等待数据更新, timeout为1s,
                                                                     // 如果数据没更新, 那么此时系统会进行任务切换.
-        /* handle the poll result */
-        if (poll_ret == 0) {
-            /* this means none of our providers is giving us data */
-            printf("[px4_simple_app] Got no data within a second\n");
-        } else if (poll_ret < 0) {
-            /* this is seriously bad - should be an emergency */
-            if (error_counter < 10 || error_counter % 50 == 0) {
-                /* use a counter to prevent flooding (and slowing us down) */
-                printf("[px4_simple_app] ERROR return value from poll(): %d\n"
-                    , poll_ret);
-            }
-            error_counter++;
-        } else {
-            if (fds[0].revents & POLLIN) {
-                /* obtained data for the first file descriptor */
-                struct sensor_combined_s raw;
-                /* copy sensors raw data into local buffer */
-                orb_copy(ORB_ID(sensor_combined), sensor_sub_fd, &raw);
-                // 将更新的数据输出到shell上
+//        /* handle the poll result */
+//        if (poll_ret == 0) {
+//            /* this means none of our providers is giving us data */
+//            printf("[px4_simple_app] Got no data within a second\n");
+//        } else if (poll_ret < 0) {
+//            /* this is seriously bad - should be an emergency */
+//            if (error_counter < 10 || error_counter % 50 == 0) {
+//                /* use a counter to prevent flooding (and slowing us down) */
+//                printf("[px4_simple_app] ERROR return value from poll(): %d\n"
+//                    , poll_ret);
+//            }
+//            error_counter++;
+//        } else {
+//            if (fds[0].revents & POLLIN) {
+//                /* obtained data for the first file descriptor */
+//                struct sensor_combined_s raw;
+//                /* copy sensors raw data into local buffer */
+//                orb_copy(ORB_ID(sensor_combined), sensor_sub_fd, &raw);
+//                // 将更新的数据输出到shell上
+////                printf("[px4_simple_app] Accelerometer:\t%8.4f\t%8.4f\t%8.4f\n",
+////                    (double)raw.accelerometer_m_s2[0],
+////                    (double)raw.accelerometer_m_s2[1],
+////                    (double)raw.accelerometer_m_s2[2]);
+//
+//                struct parafoil_attitude_sensor_s parafoil_attitude_sensor_data;
+//				/* copy sensors raw data into local buffer */
+//				orb_copy(ORB_ID(parafoil_attitude_sensor), parafoil_attitude_sensor_sub_fd, &parafoil_attitude_sensor_data);
+//				printf("parafoil_attitude_sensor_data.parafoil_roll_angle = %8.3f\n",(double)parafoil_attitude_sensor_data.parafoil_roll_angle);
+//
+//
+//                /* set att and publish this information for other apps */
+//                att.rollspeed = raw.accelerometer_m_s2[0];
+//                att.pitchspeed = raw.accelerometer_m_s2[1];
+//                att.yawspeed = raw.accelerometer_m_s2[2];
+//                orb_publish(ORB_ID(vehicle_attitude), att_pub_fd, &att);    // 发送vehicle_attitude数据
+//
+//                /* set att and publish this information for other apps */
+//				px4_test.a = 2;
+//				px4_test.b = 2;
+//				orb_publish(ORB_ID(px4_test), px4_test_pub_fd, &px4_test);    // 发送vehicle_attitude数据
+//            }
+//            /* there could be more file descriptors here, in the form like:
+//             * if (fds[1..n].revents & POLLIN) {}
+//             */
+//        }
+
+    	/* wait for up to 20ms for data */
+		int pret = px4_poll(&fds[0], (sizeof(fds) / sizeof(fds[0])), 20);
+
+		/* timed out - periodic check for _task_should_exit */
+		if (pret == 0) {
+			// Go through the loop anyway to copy manual input at 50 Hz.
+		}
+
+		/* this is undesirable but not much we can do */
+		if (pret < 0) {
+			warn("poll error %d, %d", pret, errno);
+			continue;
+		}
+
+		printf("time out!\n");
+
+//            /* copy sensors raw data into local buffer */
+//            orb_copy(ORB_ID(sensor_combined), sensor_sub_fd, &raw);
+            // 将更新的数据输出到shell上
 //                printf("[px4_simple_app] Accelerometer:\t%8.4f\t%8.4f\t%8.4f\n",
 //                    (double)raw.accelerometer_m_s2[0],
 //                    (double)raw.accelerometer_m_s2[1],
 //                    (double)raw.accelerometer_m_s2[2]);
 
-                struct parafoil_attitude_sensor_s parafoil_attitude_sensor_data;
+
+		/* Check if vehicle control mode has changed */
+		orb_check(parafoil_attitude_sensor_sub_fd, &updated);
+
+		if (updated) {
+			parafoil_att_count++;
+			if(parafoil_att_count > 10) {
+				parafoil_att_count = 0;
 				/* copy sensors raw data into local buffer */
 				orb_copy(ORB_ID(parafoil_attitude_sensor), parafoil_attitude_sensor_sub_fd, &parafoil_attitude_sensor_data);
 				printf("parafoil_attitude_sensor_data.parafoil_roll_angle = %8.3f\n",(double)parafoil_attitude_sensor_data.parafoil_roll_angle);
 
+				/* set att and publish this information for other apps */
+				att.rollspeed = raw.accelerometer_m_s2[0];
+				att.pitchspeed = raw.accelerometer_m_s2[1];
+				att.yawspeed = raw.accelerometer_m_s2[2];
+				orb_publish(ORB_ID(vehicle_attitude), att_pub_fd, &att);    // 发送vehicle_attitude数据
 
-                /* set att and publish this information for other apps */
-                att.rollspeed = raw.accelerometer_m_s2[0];
-                att.pitchspeed = raw.accelerometer_m_s2[1];
-                att.yawspeed = raw.accelerometer_m_s2[2];
-                orb_publish(ORB_ID(vehicle_attitude), att_pub_fd, &att);    // 发送vehicle_attitude数据
-
-                /* set att and publish this information for other apps */
+				/* set att and publish this information for other apps */
 				px4_test.a = 2;
 				px4_test.b = 2;
 				orb_publish(ORB_ID(px4_test), px4_test_pub_fd, &px4_test);    // 发送vehicle_attitude数据
-            }
-            /* there could be more file descriptors here, in the form like:
-             * if (fds[1..n].revents & POLLIN) {}
-             */
-        }
+
+			}
+
+		}
+
+        /* there could be more file descriptors here, in the form like:
+         * if (fds[1..n].revents & POLLIN) {}
+         */
+
     }
     thread_running = false;
     return 0;
