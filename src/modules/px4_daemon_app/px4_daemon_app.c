@@ -19,6 +19,7 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/sensor_combined.h>
 #include <uORB/topics/vehicle_attitude.h>
+#include <uORB/topics/parafoil_attitude.h>
 
 #include <px4_defines.h>
 #include <px4_tasks.h>
@@ -119,6 +120,11 @@ int px4_daemon_thread_main(int argc, char *argv[])
 	/* limit the update rate to 5 Hz */
 	orb_set_interval(sensor_sub_fd, 200);
 
+	/* subscribing. */
+	int parafoil_attitude_sub_fd = orb_subscribe(ORB_ID(parafoil_attitude));
+	/* limit the update rate to 5 Hz */
+	orb_set_interval(parafoil_attitude_sub_fd, 200);
+
 	/* wake up. */
 	px4_pollfd_struct_t fds[] = {
 		{ .fd = sensor_sub_fd,   .events = POLLIN },
@@ -156,6 +162,24 @@ int px4_daemon_thread_main(int argc, char *argv[])
 				 (double)raw.accelerometer_m_s2[0],
 				 (double)raw.accelerometer_m_s2[1],
 				 (double)raw.accelerometer_m_s2[2]);
+
+
+			bool updated;
+			/* Check if parameters have changed */
+			orb_check(parafoil_attitude_sub_fd, &updated);
+			if(updated) {
+				/* obtained data for the first file descriptor */
+				struct parafoil_attitude_s parafoil_attitude_data;
+				/* copy sensors raw data into local buffer */
+				orb_copy(ORB_ID(parafoil_attitude), parafoil_attitude_sub_fd, &parafoil_attitude_data);
+				PX4_INFO("parafoil_attitude_data:\t%8.4f\t%8.4f\t%8.4f",
+					 (double)parafoil_attitude_data.parafoil_roll_angle,
+					 (double)parafoil_attitude_data.parafoil_pitch_angle,
+					 (double)parafoil_attitude_data.parafoil_yaw_angle);
+			}
+			else
+				PX4_INFO("No parafoil attitude update!");
+
 
 		}
 
