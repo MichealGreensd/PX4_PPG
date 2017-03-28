@@ -109,6 +109,9 @@ set(config_module_list
 	modules/mc_att_control
 	modules/mc_pos_control
 	modules/vtol_att_control
+	
+	# Custom App -libn
+	modules/px4_daemon_app
 
 	#
 	# Logging
