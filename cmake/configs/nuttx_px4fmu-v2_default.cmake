@@ -112,6 +112,7 @@ set(config_module_list
 	
 	# Custom App -libn
 	modules/px4_daemon_app
+	modules/uart_communication
 
 	#
 	# Logging
