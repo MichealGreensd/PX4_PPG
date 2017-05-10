@@ -1,146 +1,104 @@
-/****************************************************************************
- *
- *   Copyright (c) 2012-2015 PX4 Development Team. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name PX4 nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- *
- ****************************************************************************/
-
-/**
- * @file px4_daemon_app.c
- * daemon application example for PX4 autopilot
- *
- * @author Example User <mail@example.com>
- */
-
+/********************头文件区****************************/
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <string.h>//strcmp strcasecmp
 #include <unistd.h>
-
 #include <px4_config.h>
-#include <px4_tasks.h>
-
+#include <px4_tasks.h>   //产生deamon
 #include <systemlib/systemlib.h>
 #include <systemlib/err.h>
+#include<poll.h>   //poll函数所在头文件
+#include <uORB/uORB.h>
+#include <uORB/topics/sensor_combined.h>
+#include <uORB/topics/vehicle_attitude.h>
+#include<uORB/topics/extern_sensor.h>
 
-static bool thread_should_exit = false;		/**< daemon exit flag */
-static bool thread_running = false;		/**< daemon status flag */
-static int daemon_task;				/**< Handle of daemon task / thread */
+/*******************全局变量声明区*******************************/
+static bool thread_should_exit = false;
+static bool thread_running = false;
 
-/**
- * daemon management function.
- */
-__EXPORT int px4_daemon_app_main(int argc, char *argv[]);
+/***********************功能说明*****************************************/
+//通过订阅parafoil_attitude这个topic,获得俯仰,偏航以及翻滚角度
 
-/**
- * Mainloop of daemon.
- */
-int px4_daemon_thread_main(int argc, char *argv[]);
+/************************说明结束****************************************/
 
-/**
- * Print the correct usage.
- */
-static void usage(const char *reason);
+/************************函数声明区********************************/
+int daemon(int argc, char *argv[]);  //deamon函数
+__EXPORT int px4_daemon_app_main(int argc, char *argv[]);//主函数
 
-static void
-usage(const char *reason)
-{
-	if (reason) {
-		warnx("%s\n", reason);
-	}
-
-	warnx("usage: daemon {start|stop|status} [-p <additional params>]\n\n");
-}
-
-/**
- * The daemon app only briefly exists to start
- * the background job. The stack size assigned in the
- * Makefile does only apply to this management task.
- *
- * The actual stack size should be set in the call
- * to task_create().
- */
+/*******************实现模块********************************/
 int px4_daemon_app_main(int argc, char *argv[])
 {
+
+
 	if (argc < 2) {
-		usage("missing command");
+		PX4_INFO("missing command");
 		return 1;
 	}
 
-	if (!strcmp(argv[1], "start")) {
+	if (!strcasecmp(argv[1], "start")) {
 
 		if (thread_running) {
-			warnx("daemon already running\n");
-			/* this is not an error */
+			PX4_INFO("daemon is already running\n");
 			return 0;
 		}
 
 		thread_should_exit = false;
-		daemon_task = px4_task_spawn_cmd("daemon",
-						 SCHED_DEFAULT,
-						 SCHED_PRIORITY_DEFAULT,
-						 2000,
-						 px4_daemon_thread_main,
-						 (argv) ? (char *const *)&argv[2] : (char *const *)NULL);
+        px4_task_spawn_cmd("daemon 1", SCHED_DEFAULT,SCHED_PRIORITY_DEFAULT,2000, daemon,(char *const *)NULL);
 		return 0;
 	}
 
-	if (!strcmp(argv[1], "stop")) {
+	if (!strcasecmp(argv[1], "stop")) {
 		thread_should_exit = true;
 		return 0;
 	}
 
-	if (!strcmp(argv[1], "status")) {
+	if (!strcasecmp(argv[1], "check")) {
 		if (thread_running) {
-			warnx("\trunning\n");
+			warnx("daemon is running \n");
 
 		} else {
-			warnx("\tnot started\n");
+			warnx("daemon doesn't exit \n");
 		}
 
 		return 0;
 	}
-
-	usage("unrecognized command");
-	return 1;
+	PX4_INFO("unrecognized command");
+	return 0;
 }
 
-int px4_daemon_thread_main(int argc, char *argv[])
+int daemon(int argc, char *argv[])
 {
-
-	warnx("[daemon] starting\n");
 
 	thread_running = true;
 
-	while (!thread_should_exit) {
-		warnx("Hello daemon!\n");
-		sleep(10);
+
+	int para_handle=orb_subscribe(ORB_ID(extern_sensor));
+    orb_set_interval(para_handle, 200);
+
+    bool updated;
+
+	while (!thread_should_exit)
+	{
+
+		updated=false;
+	    orb_check(para_handle, &updated);
+		if(updated)
+	   {
+        struct extern_sensor_s extern_sensor_data;
+	    orb_copy(ORB_ID(extern_sensor), para_handle, &extern_sensor_data);
+		PX4_INFO("extern_sensor_data:%8.4f %8.4f %8.4f",(double)extern_sensor_data.parafoil_roll_angle,
+										 (double)extern_sensor_data.parafoil_pitch_angle,
+										 (double)extern_sensor_data.parafoil_yaw_angle);
+
+	   }
+		 else
+		    PX4_INFO("No extern_sensor update!");
+
+		if(thread_should_exit)
+					break;
+
+        sleep(1);//隔1s订阅一次topic数据
 	}
 
 	warnx("[daemon] exiting.\n");
@@ -149,3 +107,4 @@ int px4_daemon_thread_main(int argc, char *argv[])
 
 	return 0;
 }
+

@@ -175,7 +175,8 @@ set(config_module_list
 
 	# Tutorial code from
 	# https://px4.io/dev/daemon
-	#examples/px4_daemon_app
+	examples/px4_daemon_app
+        navigation/extern_sensor_date
 
 	# Tutorial code from
 	# https://px4.io/dev/debug_values
