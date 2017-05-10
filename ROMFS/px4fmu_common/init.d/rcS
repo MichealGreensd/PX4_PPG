@@ -788,9 +788,17 @@ then
 	if ver hwcmp AEROFC_V1
 	then
 	else
-		# Start MAVLink
+		 fi
+
+   if [ $LOG_FILE == /dev/null ]
+	then
+		# Try to get an USB console
+		nshterm /dev/ttyACM0 &
+		#mavlink start -r 800000 -d /dev/ttyACM0 -m config -x
+	else
+		#nshterm /dev/ttyACM0 &
 		mavlink start -r 800000 -d /dev/ttyACM0 -m config -x
-	fi
+	fi	
 
 	#
 	# Logging
@@ -1115,6 +1123,10 @@ unset TUNE_ERR
 
 # Boot is complete, inform MAVLink app(s) that the system is now fully up and running
 mavlink boot_complete
+if ver hwcmp PX4FMU_V2
+then 
+extern_sensor_date
+fi
 
 if [ $EXIT_ON_END == yes ]
 then
