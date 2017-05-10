@@ -53,6 +53,7 @@ set(msg_file_names
 	ekf2_timestamps.msg
 	esc_report.msg
 	esc_status.msg
+        extern_sensor.msg
 	estimator_status.msg
 	fence.msg
 	fence_vertex.msg
