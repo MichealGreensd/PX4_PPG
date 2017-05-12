@@ -634,6 +634,20 @@ struct log_DPRS_s {
 	float temperature;
 };
 
+/********************要写入自定义数据,编号为64到128***************************/
+#define LOG_HW_MSG 64
+struct log_HW_s {
+	float angel_x;   //f
+    float angel_y;
+    float angel_z;
+	float acc_x;
+	float acc_y;
+	float acc_z;
+	float rad_x;
+	float rad_y;
+	float rad_z;
+};
+
 /********** SYSTEM MESSAGES, ID > 0x80 **********/
 
 /* --- TIME - TIME STAMP --- */
@@ -724,6 +738,8 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(LAND, "B", "Landed"),
 	LOG_FORMAT(LOAD, "f", "CPU"),
 	LOG_FORMAT(DPRS, "Qffff", "errors,DPRESraw,DPRES,DPRESmax,Temp"),
+        //自定义
+        LOG_FORMAT(HW,"fffffffff","angel_x,angel_y,angel_z,acc_x,acc_y,acc_z,rad_x,rad_y,rad_z"),
 	/* system-level messages, ID >= 0x80 */
 	/* FMT: don't write format of format message, it's useless */
 	LOG_FORMAT(TIME, "Q", "StartTime"),

@@ -112,6 +112,9 @@
 #include <uORB/topics/commander_state.h>
 #include <uORB/topics/cpuload.h>
 
+//自定义
+#include<uORB/topics/hw_sensor.h>
+
 #include <systemlib/systemlib.h>
 #include <systemlib/param/param.h>
 #include <systemlib/perf_counter.h>
@@ -1222,6 +1225,8 @@ int sdlog2_thread_main(int argc, char *argv[])
 		struct vehicle_land_detected_s land_detected;
 		struct cpuload_s cpuload;
 		struct vehicle_gps_position_s dual_gps_pos;
+                //自定义
+		struct hw_sensor_s coco;
 	} buf;
 
 	memset(&buf, 0, sizeof(buf));
@@ -1284,6 +1289,8 @@ int sdlog2_thread_main(int argc, char *argv[])
 			struct log_RPL6_s log_RPL6;
 			struct log_LOAD_s log_LOAD;
 			struct log_DPRS_s log_DPRS;
+                        //自定义
+			struct log_HW_s log_HW;
 		} body;
 	} log_msg = {
 		LOG_PACKET_HEADER_INIT(0)
@@ -1334,6 +1341,8 @@ int sdlog2_thread_main(int argc, char *argv[])
 		int commander_state_sub;
 		int cpuload_sub;
 		int diff_pres_sub;
+                //自定义
+		int hw_sensor_handle;
 	} subs;
 
 	subs.cmd_sub = -1;
@@ -1377,7 +1386,8 @@ int sdlog2_thread_main(int argc, char *argv[])
 	subs.commander_state_sub = -1;
 	subs.cpuload_sub = -1;
 	subs.diff_pres_sub = -1;
-
+        //自定义
+	subs.hw_sensor_handle=-1;
 	/* add new topics HERE */
 
 
@@ -1830,6 +1840,21 @@ int sdlog2_thread_main(int argc, char *argv[])
 					LOGBUFFER_WRITE_AND_COUNT(GS0B);
 				}
 			}
+	//自定义
+    if(copy_if_updated(ORB_ID(hw_sensor), &subs.hw_sensor_handle, &buf.coco))
+    {
+    		log_msg.msg_type=LOG_HW_MSG;
+    	       log_msg.body.log_HW.acc_x=buf.coco.acc[0];
+    	       log_msg.body.log_HW.acc_y=buf.coco.acc[1];
+    	       log_msg.body.log_HW.acc_z=buf.coco.acc[2];
+    			log_msg.body.log_HW.rad_x=buf.coco.rad[0];
+    			log_msg.body.log_HW.rad_y=buf.coco.rad[1];
+    			log_msg.body.log_HW.rad_z=buf.coco.rad[2];
+    	       log_msg.body.log_HW.angel_x=buf.coco.angel[0];
+    	       log_msg.body.log_HW.angel_y=buf.coco.angel[1];
+    	       log_msg.body.log_HW.angel_z=buf.coco.angel[2];
+    		LOGBUFFER_WRITE_AND_COUNT(HW);hwh
+    }
 
 			/* --- ATTITUDE SETPOINT --- */
 			if (copy_if_updated(ORB_ID(vehicle_attitude_setpoint), &subs.att_sp_sub, &buf.att_sp)) {
