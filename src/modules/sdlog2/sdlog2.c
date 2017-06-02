@@ -1853,7 +1853,7 @@ int sdlog2_thread_main(int argc, char *argv[])
     	       log_msg.body.log_HW.angel_x=buf.coco.angel[0];
     	       log_msg.body.log_HW.angel_y=buf.coco.angel[1];
     	       log_msg.body.log_HW.angel_z=buf.coco.angel[2];
-    		LOGBUFFER_WRITE_AND_COUNT(HW);hwh
+    		LOGBUFFER_WRITE_AND_COUNT(HW);
     }
 
 			/* --- ATTITUDE SETPOINT --- */

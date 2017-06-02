@@ -693,8 +693,15 @@ then
 	fi
 
 	# Start MAVLink
-	mavlink start -r 800000 -d /dev/ttyACM0 -m config -x
-
+	 if [ $LOG_FILE == /dev/null ]
+	then
+		# Try to get an USB console
+		nshterm /dev/ttyACM0 &
+		#mavlink start -r 800000 -d /dev/ttyACM0 -m config -x
+	else
+		nshterm /dev/ttyACM0 &
+		#mavlink start -r 800000 -d /dev/ttyACM0 -m config -x
+	fi	
 	#
 	# Logging
 	#
