@@ -111,6 +111,9 @@
 #include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/commander_state.h>
 #include <uORB/topics/cpuload.h>
+/***********自定义************/
+#include<uORB/topics/TSC.h>
+#include<uORB/topics/PM25.h>
 
 #include <systemlib/systemlib.h>
 #include <systemlib/param/param.h>
@@ -1222,6 +1225,9 @@ int sdlog2_thread_main(int argc, char *argv[])
 		struct vehicle_land_detected_s land_detected;
 		struct cpuload_s cpuload;
 		struct vehicle_gps_position_s dual_gps_pos;
+                /**********自定义***********/
+                struct TSC_s tt;
+		struct PM25_s pp;
 	} buf;
 
 	memset(&buf, 0, sizeof(buf));
@@ -1284,6 +1290,9 @@ int sdlog2_thread_main(int argc, char *argv[])
 			struct log_RPL6_s log_RPL6;
 			struct log_LOAD_s log_LOAD;
 			struct log_DPRS_s log_DPRS;
+                         /****自定义****/
+                        struct log_TSC_s log_TSC;
+			struct log_PM_s log_PM;
 		} body;
 	} log_msg = {
 		LOG_PACKET_HEADER_INIT(0)
@@ -1334,6 +1343,9 @@ int sdlog2_thread_main(int argc, char *argv[])
 		int commander_state_sub;
 		int cpuload_sub;
 		int diff_pres_sub;
+                /*******自定义********/
+                int Thandle;
+		int Phandle;
 	} subs;
 
 	subs.cmd_sub = -1;
@@ -1377,7 +1389,9 @@ int sdlog2_thread_main(int argc, char *argv[])
 	subs.commander_state_sub = -1;
 	subs.cpuload_sub = -1;
 	subs.diff_pres_sub = -1;
-
+        /********自定义********/
+        subs.Thandle=-1;
+	subs.Phandle=-1;
 	/* add new topics HERE */
 
 
@@ -1830,6 +1844,26 @@ int sdlog2_thread_main(int argc, char *argv[])
 					LOGBUFFER_WRITE_AND_COUNT(GS0B);
 				}
 			}
+    /*********************自定义***************************/
+
+      if(copy_if_updated(ORB_ID(TSC), &subs.Thandle, &buf.tt))
+       {
+       		  log_msg.msg_type=LOG_TSC_MSG;
+       	       log_msg.body.log_TSC.ppm=buf.tt.ppm;
+       	       log_msg.body.log_TSC.shi=buf.tt.shi;
+       	       log_msg.body.log_TSC.temp=buf.tt.temp;
+       	       PX4_INFO("%d,%f,%f",buf.tt.ppm,(double)(buf.tt.temp),(double)(buf.tt.shi));
+       		LOGBUFFER_WRITE_AND_COUNT(TSC);
+       }
+
+     if(copy_if_updated(ORB_ID(PM25), &subs.Phandle, &buf.pp))
+          {
+          		  log_msg.msg_type=LOG_PM_MSG;
+          	       log_msg.body.log_PM.PM=buf.pp.pm25;
+          	       PX4_INFO("%f",(double)(buf.pp.pm25));
+          		   LOGBUFFER_WRITE_AND_COUNT(PM);
+          }
+
 
 			/* --- ATTITUDE SETPOINT --- */
 			if (copy_if_updated(ORB_ID(vehicle_attitude_setpoint), &subs.att_sp_sub, &buf.att_sp)) {

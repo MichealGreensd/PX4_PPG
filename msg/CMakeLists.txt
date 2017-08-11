@@ -95,6 +95,8 @@ set(msg_file_names
 	servorail_status.msg
 	subsystem_info.msg
 	system_power.msg
+        TSC.msg
+        PM25.msg
 	tecs_status.msg
 	telemetry_status.msg
 	test_motor.msg

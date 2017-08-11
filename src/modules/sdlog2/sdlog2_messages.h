@@ -633,6 +633,22 @@ struct log_DPRS_s {
 	float max_differential_pressure_pa;
 	float temperature;
 };
+/******自定义*************/
+  #define LOG_TSC_MSG 65
+  struct log_TSC_s{
+	uint32_t ppm;
+	float temp;
+	float shi;
+   };
+
+  #define LOG_PM_MSG 66
+  struct log_PM_s{
+	float PM;
+  };  
+
+
+
+
 
 /********** SYSTEM MESSAGES, ID > 0x80 **********/
 
@@ -724,6 +740,8 @@ static const struct log_format_s log_formats[] = {
 	LOG_FORMAT(LAND, "B", "Landed"),
 	LOG_FORMAT(LOAD, "f", "CPU"),
 	LOG_FORMAT(DPRS, "Qffff", "errors,DPRESraw,DPRES,DPRESmax,Temp"),
+  	LOG_FORMAT(TSC,"Iff","ppm,temp,shi"),
+  	LOG_FORMAT(PM,"f","PM"),  
 	/* system-level messages, ID >= 0x80 */
 	/* FMT: don't write format of format message, it's useless */
 	LOG_FORMAT(TIME, "Q", "StartTime"),

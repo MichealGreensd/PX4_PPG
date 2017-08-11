@@ -156,6 +156,7 @@ set(config_module_list
 	# Rover apps
 	#
 	#examples/rover_steering_control
+        sensor/airsensor
 
 	#
 	# Demo apps
